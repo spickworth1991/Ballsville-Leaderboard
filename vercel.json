@@ -1,17 +1,14 @@
 {
   "version": 2,
   "builds": [
-    { "src": "next.config.js", "use": "@vercel/next" }
-  ],
-  "routes": [
     {
-      "src": "/(.*)",
-      "dest": "/"
+      "src": "next.config.js",
+      "use": "@vercel/next"
     }
   ],
   "headers": [
     {
-      "source": "/(.*).json",
+      "source": "/(.*)\\.json",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=59" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
