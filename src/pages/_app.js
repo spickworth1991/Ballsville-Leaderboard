@@ -1,5 +1,12 @@
-import '../styles/globals.css'
+import '../styles/globals.css';
+import { LeaderboardProvider } from '../context/LeaderboardContext';
 
-export default function MyApp({ Component, pageProps }) {
-  return <Component {...pageProps} />
+function MyApp({ Component, pageProps }) {
+  return (
+    <LeaderboardProvider>
+      <Component {...pageProps} />
+    </LeaderboardProvider>
+  );
 }
+
+export default MyApp;

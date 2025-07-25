@@ -1,10 +1,8 @@
-import Link from "next/link";
-
 export default function Navbar() {
   return (
-    <nav className="flex gap-4 mb-6">
-      <Link href="/" className="text-blue-600 hover:underline">Home</Link>
-      <Link href="/divisions" className="text-blue-600 hover:underline">Divisions</Link>
+    <nav className="flex items-center justify-between mb-6 p-4 bg-gray-900 rounded-lg shadow-lg">
+      <img src="/logo.png" alt="Logo" className="h-10" />
+      <h1 className="text-xl font-bold text-white">Points Leaderboard</h1>
     </nav>
   );
 }

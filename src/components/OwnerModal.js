@@ -9,45 +9,78 @@ import {
   Tooltip,
   Legend
 } from "chart.js";
+import { useEffect, useState } from "react";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-export default function OwnerModal({ owner, onClose }) {
-  const weeks = Object.keys(owner.weekly).map(Number).sort((a, b) => a - b);
+export default function OwnerModal({ owner, onClose, allOwners }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    setVisible(true);
+  }, []);
+
+  if (!owner) return null;
+
+  // ✅ Build list of other leagues dynamically
+  const otherLeagues = allOwners
+    .filter(o => o.ownerName === owner.ownerName && o.leagueName !== owner.leagueName)
+    .map(o => o.leagueName);
+
+  const weeks = Object.keys(owner.weekly).sort((a, b) => a - b);
+  const points = weeks.map(week => Number(owner.weekly[week].toFixed(2)));
+
   const data = {
-    labels: weeks.map(w => `W${w}`),
+    labels: weeks.map(w => `Week ${w}`),
     datasets: [
       {
         label: "Weekly Points",
-        data: weeks.map(w => owner.weekly[w]),
-        fill: false,
-        borderColor: "rgb(75, 192, 192)",
-        tension: 0.1
+        data: points,
+        borderColor: "#3b82f6",
+        backgroundColor: "#1d4ed8",
+        tension: 0.4,
       }
     ]
   };
 
+  const options = {
+    responsive: true,
+    plugins: { legend: { display: false } }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg max-w-lg w-full">
-        <h2 className="text-xl font-bold mb-4">{owner.name}</h2>
-        <div className="mb-4">
-          <Line data={data} />
-        </div>
-        <h3 className="font-semibold mb-2">Leagues:</h3>
-        <ul className="mb-4">
-          {owner.leagues.map((l, i) => (
-            <li key={i} className="border-b py-1">
-              {l.league_name}: <span className="font-bold">{l.points.toFixed(2)}</span>
-            </li>
-          ))}
-        </ul>
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 transition-opacity duration-500 ${
+        visible ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      <div className="bg-gray-900 p-6 rounded-lg shadow-lg max-w-xl w-full relative animate-fadeIn">
         <button
           onClick={onClose}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="absolute top-2 right-2 text-white text-xl hover:text-red-500"
         >
-          Close
+          ✖
         </button>
+        <h2 className="text-2xl font-bold mb-4">{owner.ownerName}</h2>
+        <p className="text-gray-400 mb-2">Current League: {owner.leagueName}</p>
+        <p className="mb-4">Total Points: <span className="text-blue-400">{owner.total}</span></p>
+
+        
+        <div className="h-64">
+          <Line data={data} options={options} />
+        </div>
+
+        {/* ✅ Show other leagues dynamically */}
+        {otherLeagues.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-1">Other Leagues:</h3>
+            <ul className="list-disc list-inside text-gray-300">
+              {otherLeagues.map((lg, i) => (
+                <li key={i}>{lg}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
