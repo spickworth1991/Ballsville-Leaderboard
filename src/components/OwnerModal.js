@@ -25,7 +25,11 @@ export default function OwnerModal({ owner, onClose, allOwners }) {
   // ✅ Build list of other leagues dynamically
   const otherLeagues = allOwners
     .filter(o => o.ownerName === owner.ownerName && o.leagueName !== owner.leagueName)
-    .map(o => o.leagueName);
+    .map(o => ({
+      name: o.leagueName,
+      total: o.total
+    }))
+    .sort((a, b) => b.total - a.total);
 
   const weeks = Object.keys(owner.weekly).sort((a, b) => a - b);
   const points = weeks.map(week => Number(owner.weekly[week].toFixed(2)));
@@ -74,13 +78,18 @@ export default function OwnerModal({ owner, onClose, allOwners }) {
         {otherLeagues.length > 0 && (
           <div className="mb-4">
             <h3 className="text-lg font-semibold mb-1">Other Leagues:</h3>
-            <ul className="list-disc list-inside text-gray-300">
-              {otherLeagues.map((lg, i) => (
-                <li key={i}>{lg}</li>
-              ))}
-            </ul>
+            <div className="max-h-32 overflow-y-auto border border-gray-700 rounded p-2">
+              <ul className="list-disc list-inside text-gray-300 space-y-1">
+                {otherLeagues.map((lg, i) => (
+                  <li key={i}>
+                    {lg.name} — <span className="text-blue-400">{lg.total.toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
+
       </div>
     </div>
   );
