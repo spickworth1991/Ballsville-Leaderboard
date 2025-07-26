@@ -49,6 +49,7 @@ export default function OwnerModal({ owner, onClose, allOwners }) {
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false, // ✅ Chart resizes well on mobile
     plugins: { legend: { display: false } }
   };
 
@@ -58,38 +59,45 @@ export default function OwnerModal({ owner, onClose, allOwners }) {
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
-      <div className="bg-gray-900 p-6 rounded-lg shadow-lg max-w-xl w-full relative animate-fadeIn">
+      <div className="bg-gray-900 p-4 sm:p-6 rounded-lg shadow-lg w-11/12 sm:max-w-xl max-h-[90vh] overflow-auto relative animate-fadeIn">
+        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-2 right-2 text-white text-xl hover:text-red-500"
         >
           ✖
         </button>
-        <h2 className="text-2xl font-bold mb-4">{owner.ownerName}</h2>
-        <p className="text-gray-400 mb-2">Current League: {owner.leagueName}</p>
-        <p className="mb-4">Total Points: <span className="text-blue-400">{owner.total}</span></p>
 
-        
-        <div className="h-64">
+        {/* Title */}
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">{owner.ownerName}</h2>
+        <p className="text-gray-400 mb-2 text-center text-sm sm:text-base">
+          Current League: <span className="text-indigo-400">{owner.leagueName}</span>
+        </p>
+        <p className="mb-4 text-center text-sm sm:text-base">
+          Total Points: <span className="text-blue-400 font-semibold">{owner.total}</span>
+        </p>
+
+        {/* Chart Container - Responsive Height */}
+        <div className="h-48 sm:h-64 mb-4">
           <Line data={data} options={options} />
         </div>
 
-        {/* ✅ Show other leagues dynamically */}
+        {/* Other Leagues */}
         {otherLeagues.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-1">Other Leagues:</h3>
+          <div>
+            <h3 className="text-lg font-semibold mb-2 text-center">Other Leagues</h3>
             <div className="max-h-32 overflow-y-auto border border-gray-700 rounded p-2">
-              <ul className="list-disc list-inside text-gray-300 space-y-1">
+              <ul className="list-disc list-inside text-gray-300 space-y-1 text-sm sm:text-base">
                 {otherLeagues.map((lg, i) => (
-                  <li key={i}>
-                    {lg.name} — <span className="text-blue-400">{lg.total.toFixed(2)}</span>
+                  <li key={i} className="flex justify-between">
+                    <span>{lg.name}</span>
+                    <span className="text-blue-400">{lg.total.toFixed(2)}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ body {
   @apply bg-black text-white;
 }
 
+/* Existing animation + Mobile optimized version */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -13,4 +14,42 @@ body {
 
 .animate-fadeIn {
   animation: fadeIn 0.4s ease-in-out;
+}
+
+/* Ensure consistent box-sizing */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Smooth scrolling for modals and mobile */
+html, body {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar styling for dropdowns and modal content */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563; /* Tailwind gray-600 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280; /* Tailwind gray-500 */
+}
+
+/* Table responsiveness on small screens */
+@media (max-width: 640px) {
+  table {
+    font-size: 0.8rem;
+  }
+
+  th, td {
+    padding: 0.4rem;
+  }
 }
