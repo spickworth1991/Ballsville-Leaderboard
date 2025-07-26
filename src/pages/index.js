@@ -1,48 +1,48 @@
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import Leaderboard from "../components/Leaderboard";
+'use client';
+import { useEffect, useState } from 'react';
+import Navbar from '../components/Navbar';
+import Leaderboard from '../components/Leaderboard';
 
-export default function HomePage() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function Home() {
+  const [leaderboards, setLeaderboards] = useState(null);
+  const [current, setCurrent] = useState({ year: '2025', mode: 'big_game', filterType: 'all', filterValue: null });
+  const [filteredData, setFilteredData] = useState(null);
 
   useEffect(() => {
-    fetch("/data/leaderboard.json")
+    fetch('/data/leaderboards.json')
       .then(res => res.json())
       .then(json => {
-        setData(json);
-        setLoading(false);
+        setLeaderboards(json);
+        // Initialize default view
+        setFilteredData(json['2025']['big_game']);
       });
   }, []);
 
-  if (loading) return <div className="text-center text-white mt-10">Loading leaderboard...</div>;
+  useEffect(() => {
+    if (!leaderboards) return;
+
+    const fullData = leaderboards[current.year][current.mode];
+    let filteredOwners = [...fullData.owners];
+
+    if (current.filterType === 'division') {
+      filteredOwners = filteredOwners.filter(o => o.division === current.filterValue);
+    } else if (current.filterType === 'league') {
+      filteredOwners = filteredOwners.filter(o => o.leagueName === current.filterValue);
+    }
+
+    setFilteredData({ ...fullData, owners: filteredOwners });
+  }, [current, leaderboards]);
+
+  if (!leaderboards) return <p className="text-center mt-8">Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <div className="text-center mb-6">
-        <div className="flex justify-center mb-8">
-          <img
-            src="/logo.png" // ✅ Your logo file in /public/
-            alt="League Banner"
-            className="w-full max-w-5xl h-auto rounded-lg shadow-lg"
-          />
-        </div>
-
-
-      </div>
-
-      <h1 className="text-4xl font-bold text-center mb-4">Combined Leaderboard</h1>
-
-      {/* ✅ Use shared Leaderboard with pagination */}
-      <Leaderboard data={data} />
-
-      <div className="text-center mt-8 flex justify-center gap-4">
-        <Link href="/divisions">
-          <button className="bg-blue-600 hover:bg-blue-800 px-6 py-3 rounded-lg transition">View Divisions</button>
-        </Link>
-        <Link href="/league">
-          <button className="bg-green-600 hover:bg-green-800 px-6 py-3 rounded-lg transition">View Leagues</button>
-        </Link>
+    <div>
+      <Navbar data={leaderboards} current={current} setCurrent={setCurrent} />
+      <div className="max-w-7xl mx-auto p-6">
+        <h1 className="text-4xl font-bold text-center mb-6 text-indigo-500">
+          {filteredData?.name} {current.filterType !== 'all' ? ` - ${current.filterValue}` : ''}
+        </h1>
+        {filteredData && <Leaderboard data={filteredData} />}
       </div>
     </div>
   );

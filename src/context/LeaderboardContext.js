@@ -1,20 +1,21 @@
-"use client";
-import { createContext, useState } from "react";
+'use client';
+import { createContext, useState, useEffect } from 'react';
 
 export const LeaderboardContext = createContext();
 
-export function LeaderboardProvider({ children }) {
-  const [data, setData] = useState({ owners: [], weeks: [], divisions: [], leaguesByDivision: {} });
+export const LeaderboardProvider = ({ children }) => {
+  const [leaderboards, setLeaderboards] = useState({});
+  const [current, setCurrent] = useState({ year: null, type: null });
 
-  const loadData = async () => {
-    const res = await fetch("/data/leaderboard.json");
-    const json = await res.json();
-    setData(json);
-  };
+  useEffect(() => {
+    fetch('/data/leaderboards.json')
+      .then(res => res.json())
+      .then(json => setLeaderboards(json));
+  }, []);
 
   return (
-    <LeaderboardContext.Provider value={{ data, loadData }}>
+    <LeaderboardContext.Provider value={{ leaderboards, current, setCurrent }}>
       {children}
     </LeaderboardContext.Provider>
   );
-}
+};
