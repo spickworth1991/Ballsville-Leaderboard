@@ -22,15 +22,22 @@ export default function Leaderboard({ data }) {
     <div className="overflow-x-auto animate-fadeIn">
       {/* Toggle Weekly Scores */}
       <div className="text-center mb-4">
-        <label className="flex items-center justify-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            className="w-5 h-5"
-            checked={showWeeks}
-            onChange={() => setShowWeeks(!showWeeks)}
-          />
-          <span className="text-lg">Show Weekly Scores</span>
-        </label>
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-lg font-medium">Weekly Scores</span>
+          <button
+            onClick={() => setShowWeeks(!showWeeks)}
+            className={`w-14 h-8 flex items-center rounded-full p-1 transition ${
+              showWeeks ? 'bg-blue-600' : 'bg-gray-400'
+            }`}
+          >
+            <div
+              className={`bg-white w-6 h-6 rounded-full shadow-md transform transition ${
+                showWeeks ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            ></div>
+          </button>
+        </div>
+
       </div>
 
       {showWeeks && (
