@@ -1,30 +1,79 @@
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import OwnerModal from "./OwnerModal";
 
 export default function Leaderboard({ data, year, category }) {
   const sortedOwners = [...data.owners].sort((a, b) => b.total - a.total);
   const [showWeeks, setShowWeeks] = useState(false);
-  const itemsPerPage = showWeeks ? 15 : 15;
   const [page, setPage] = useState(1);
+  const itemsPerPage = 15;
   const totalPages = Math.ceil(sortedOwners.length / itemsPerPage);
   const startIndex = (page - 1) * itemsPerPage;
   const currentOwners = sortedOwners.slice(startIndex, startIndex + itemsPerPage);
 
-  
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [selectedRoster, setSelectedRoster] = useState(null);
   const [weeklyData, setWeeklyData] = useState(null);
   const [visibleWeeksStart, setVisibleWeeksStart] = useState(0);
 
-  const weeksToShow = 3; // Number of weeks visible at once
+  const weeksToShow = 3;
   const maxWeeks = data.weeks.length;
 
+  // ✅ Cache for weekly data
+  const weeklyCache = useRef(null);
+
   useEffect(() => {
-    setPage(1);
-    fetch("/data/weekly_rosters.json")
-      .then(res => res.json())
-      .then(json => setWeeklyData(json));
-  }, [data]);
+  const loadWeeklyData = async () => {
+    if (weeklyCache.current) {
+      console.log("✅ Using cached weekly data");
+      setWeeklyData(weeklyCache.current);
+      return;
+    }
+
+    console.log("📥 Fetching weekly data...");
+    let combinedData = {};
+    let partCount = 0;
+
+    for (let i = 1; i <= 20; i++) {
+      const partUrl = `/data/weekly_rosters_part${i}.json`;
+      console.log(`Fetching ${partUrl}...`);
+
+      try {
+        const res = await fetch(partUrl);
+
+        if (res.status === 404) {
+          console.log(`✅ No more files after part ${i - 1}`);
+          break;
+        }
+
+        if (!res.ok) {
+          console.error(`❌ Failed to fetch ${partUrl}: ${res.status}`);
+          break;
+        }
+
+        const partData = await res.json();
+        partCount++;
+
+        for (const y in partData) {
+          if (!combinedData[y]) combinedData[y] = {};
+          for (const c in partData[y]) {
+            if (!combinedData[y][c]) combinedData[y][c] = {};
+            Object.assign(combinedData[y][c], partData[y][c]);
+          }
+        }
+      } catch (err) {
+        console.error(`❌ Error fetching ${partUrl}:`, err);
+        break;
+      }
+    }
+
+    console.log(`✅ Loaded ${partCount} parts, years: ${Object.keys(combinedData).join(", ")}`);
+    weeklyCache.current = combinedData; // ✅ Save to cache
+    setWeeklyData(combinedData);
+  };
+
+  loadWeeklyData();
+}, []); // ✅ Removed "data"
+
 
   const handleWeeklyClick = (owner, week) => {
     if (!showWeeks || !weeklyData) return;
@@ -46,10 +95,7 @@ export default function Leaderboard({ data, year, category }) {
     }
   };
 
-  const currentWeeks = showWeeks
-    ? data.weeks.slice(visibleWeeksStart, visibleWeeksStart + weeksToShow)
-    : [];
-
+  const currentWeeks = showWeeks ? data.weeks.slice(visibleWeeksStart, visibleWeeksStart + weeksToShow) : [];
   const uniqueLeagues = new Set(sortedOwners.map(o => o.leagueName));
   const showLeagueColumn = uniqueLeagues.size > 1;
 
