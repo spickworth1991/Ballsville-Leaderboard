@@ -42,7 +42,8 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center mb-6 text-indigo-500">
           {filteredData?.name} {current.filterType !== 'all' ? ` - ${current.filterValue}` : ''}
         </h1>
-        {filteredData && <Leaderboard data={filteredData} />}
+        {filteredData && <Leaderboard data={filteredData} year={current.year}
+    category={current.mode} />}
       </div>
     </div>
   );

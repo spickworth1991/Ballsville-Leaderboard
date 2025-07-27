@@ -1,22 +1,69 @@
 import { useState, useEffect } from "react";
 import OwnerModal from "./OwnerModal";
 
-export default function Leaderboard({ data }) {
+export default function Leaderboard({ data, year, category }) {
   const sortedOwners = [...data.owners].sort((a, b) => b.total - a.total);
-
-  const itemsPerPage = 25;
+  const [showWeeks, setShowWeeks] = useState(false);
+  const itemsPerPage = showWeeks ? 15 : 15;
   const [page, setPage] = useState(1);
   const totalPages = Math.ceil(sortedOwners.length / itemsPerPage);
   const startIndex = (page - 1) * itemsPerPage;
   const currentOwners = sortedOwners.slice(startIndex, startIndex + itemsPerPage);
 
-  useEffect(() => setPage(1), [data]);
-
-  const [showWeeks, setShowWeeks] = useState(false);
+  
   const [selectedOwner, setSelectedOwner] = useState(null);
+  const [selectedRoster, setSelectedRoster] = useState(null);
+  const [weeklyData, setWeeklyData] = useState(null);
+  const [visibleWeeksStart, setVisibleWeeksStart] = useState(0);
+
+  const weeksToShow = 3; // Number of weeks visible at once
+  const maxWeeks = data.weeks.length;
+
+  useEffect(() => {
+    setPage(1);
+    fetch("/data/weekly_rosters.json")
+      .then(res => res.json())
+      .then(json => setWeeklyData(json));
+  }, [data]);
+
+  const handleWeeklyClick = (owner, week) => {
+    if (!showWeeks || !weeklyData) return;
+
+    const leagueData = weeklyData[year]?.[category]?.[owner.leagueName]?.[week];
+    if (!leagueData) {
+      console.warn(`No data for Year: ${year}, Category: ${category}, League: ${owner.leagueName}, Week: ${week}`);
+      return;
+    }
+
+    const match = leagueData.find(r => r.ownerName === owner.ownerName);
+    if (match) {
+      setSelectedOwner(owner);
+      setSelectedRoster({
+        week,
+        starters: match.starters,
+        bench: match.bench
+      });
+    }
+  };
+
+  const currentWeeks = showWeeks
+    ? data.weeks.slice(visibleWeeksStart, visibleWeeksStart + weeksToShow)
+    : [];
 
   const uniqueLeagues = new Set(sortedOwners.map(o => o.leagueName));
   const showLeagueColumn = uniqueLeagues.size > 1;
+
+  const nextWeeks = () => {
+    if (visibleWeeksStart + weeksToShow < maxWeeks) {
+      setVisibleWeeksStart(visibleWeeksStart + weeksToShow);
+    }
+  };
+
+  const prevWeeks = () => {
+    if (visibleWeeksStart - weeksToShow >= 0) {
+      setVisibleWeeksStart(visibleWeeksStart - weeksToShow);
+    }
+  };
 
   return (
     <div className="overflow-x-auto animate-fadeIn">
@@ -27,89 +74,115 @@ export default function Leaderboard({ data }) {
           <button
             onClick={() => setShowWeeks(!showWeeks)}
             className={`w-14 h-8 flex items-center rounded-full p-1 transition ${
-              showWeeks ? 'bg-blue-600' : 'bg-gray-400'
+              showWeeks ? "bg-blue-600" : "bg-gray-400"
             }`}
           >
             <div
               className={`bg-white w-6 h-6 rounded-full shadow-md transform transition ${
-                showWeeks ? 'translate-x-6' : 'translate-x-0'
+                showWeeks ? "translate-x-6" : "translate-x-0"
               }`}
             ></div>
           </button>
         </div>
-
       </div>
 
       {showWeeks && (
-        <p className="text-center text-yellow-400 mb-4 text-sm">
-          *Weekly points do not account for stat corrections; totals do.
-        </p>
+        <div className="flex justify-center items-center gap-3 mb-4">
+          <button
+            onClick={prevWeeks}
+            disabled={visibleWeeksStart === 0}
+            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+          >
+            ◀ Prev
+          </button>
+          <span className="text-white">
+            Showing weeks {visibleWeeksStart + 1}-{Math.min(visibleWeeksStart + weeksToShow, maxWeeks)}
+          </span>
+          <button
+            onClick={nextWeeks}
+            disabled={visibleWeeksStart + weeksToShow >= maxWeeks}
+            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+          >
+            Next ▶
+          </button>
+        </div>
       )}
 
-      {sortedOwners.length === 0 ? (
-        <p className="text-center text-gray-400">No owners available.</p>
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border border-gray-700 rounded-lg text-xs sm:text-sm md:text-base">
-              <thead>
-                <tr className="bg-gray-800">
-                  <th className="p-2 sm:p-3">Rank</th>
-                  <th className="p-2 sm:p-3">Owner</th>
-                  <th>Draft Slot</th>
-                  {showLeagueColumn && <th className="p-2 sm:p-3">League</th>}
-                  {showWeeks && data.weeks.map(w => <th key={w} className="p-2">W{w}</th>)}
-                  <th className="p-2 sm:p-3">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentOwners.map((o, idx) => (
-                  <tr
-                    key={`${o.ownerName}-${idx}`}
-                    className="border-b border-gray-700 hover:bg-gray-900 cursor-pointer"
-                    onClick={() => setSelectedOwner(o)}
+      {/* Table */}
+      <table className="w-full text-left border border-gray-700 rounded-lg text-xs sm:text-sm md:text-base">
+        <thead>
+          <tr className="bg-gray-800 sticky top-0">
+            <th className="p-2">Rank</th>
+            <th className="p-2">Owner</th>
+            <th>Draft Slot</th>
+            {showLeagueColumn && <th className="p-2">League</th>}
+            {showWeeks &&
+              currentWeeks.map((w) => (
+                <th key={w} className="p-2 text-center whitespace-nowrap">W{w}</th>
+              ))}
+            <th className="p-2">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentOwners.map((o, idx) => (
+            <tr
+              key={`${o.ownerName}-${idx}`}
+              className="border-b border-gray-700 hover:bg-gray-900"
+              onClick={() => !showWeeks && setSelectedOwner(o)}
+            >
+              <td className="p-2">{startIndex + idx + 1}</td>
+              <td className="p-2">{o.ownerName}</td>
+              <td>{o.draftSlot ? `(${o.draftSlot})` : "-"}</td>
+              {showLeagueColumn && <td className="p-2">{o.leagueName}</td>}
+              {showWeeks &&
+                currentWeeks.map((w) => (
+                  <td
+                    key={w}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleWeeklyClick(o, w);
+                    }}
+                    className="p-2 text-center text-blue-400 cursor-pointer hover:bg-blue-700 hover:text-white rounded transition"
                   >
-                    <td className="p-2">{startIndex + idx + 1}</td>
-                    <td className="p-2">{o.ownerName}</td>
-                    <td>{o.draftSlot ? `(${o.draftSlot})` : "-"}</td>
-                    {showLeagueColumn && <td className="p-2">{o.leagueName}</td>}
-                    {showWeeks && data.weeks.map(w => (
-                      <td key={w} className="p-2">{o.weekly[w]?.toFixed(2) || "-"}</td>
-                    ))}
-                    <td className="p-2 font-bold">{o.total}</td>
-                  </tr>
+                    {o.weekly[w]?.toFixed(2) || "-"}
+                  </td>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              <td className="p-2 font-bold">{o.total}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-4">
-              <button
-                onClick={() => setPage(p => Math.max(p - 1, 1))}
-                disabled={page === 1}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50 w-full sm:w-auto"
-              >
-                Prev
-              </button>
-              <span className="text-white">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(p + 1, totalPages))}
-                disabled={page === totalPages}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50 w-full sm:w-auto"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <span>Page {page} of {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       )}
-      
+
+      {/* Modal */}
       {selectedOwner && (
         <OwnerModal
           owner={selectedOwner}
-          onClose={() => setSelectedOwner(null)}
+          selectedRoster={selectedRoster}
+          onClose={() => {
+            setSelectedOwner(null);
+            setSelectedRoster(null);
+          }}
           allOwners={data.owners}
         />
       )}
