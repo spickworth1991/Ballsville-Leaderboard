@@ -56,6 +56,7 @@ export default function Leaderboard({ data }) {
                 <tr className="bg-gray-800">
                   <th className="p-2 sm:p-3">Rank</th>
                   <th className="p-2 sm:p-3">Owner</th>
+                  <th>Draft Slot</th>
                   {showLeagueColumn && <th className="p-2 sm:p-3">League</th>}
                   {showWeeks && data.weeks.map(w => <th key={w} className="p-2">W{w}</th>)}
                   <th className="p-2 sm:p-3">Total</th>
@@ -70,6 +71,7 @@ export default function Leaderboard({ data }) {
                   >
                     <td className="p-2">{startIndex + idx + 1}</td>
                     <td className="p-2">{o.ownerName}</td>
+                    <td>{o.draftSlot ? `(${o.draftSlot})` : "-"}</td>
                     {showLeagueColumn && <td className="p-2">{o.leagueName}</td>}
                     {showWeeks && data.weeks.map(w => (
                       <td key={w} className="p-2">{o.weekly[w]?.toFixed(2) || "-"}</td>

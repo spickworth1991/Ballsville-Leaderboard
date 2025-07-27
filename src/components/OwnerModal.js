@@ -1,3 +1,5 @@
+"use client";
+import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -9,49 +11,22 @@ import {
   Tooltip,
   Legend
 } from "chart.js";
-import { useEffect, useState } from "react";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default function OwnerModal({ owner, onClose, allOwners }) {
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
-    setVisible(true);
-  }, []);
-
+  useEffect(() => setVisible(true), []);
   if (!owner) return null;
 
-  // ✅ Build list of other leagues dynamically
+  // ✅ Get other leagues for same owner
   const otherLeagues = allOwners
     .filter(o => o.ownerName === owner.ownerName && o.leagueName !== owner.leagueName)
-    .map(o => ({
-      name: o.leagueName,
-      total: o.total
-    }))
+    .map(o => ({ name: o.leagueName, total: o.total }))
     .sort((a, b) => b.total - a.total);
 
-  const weeks = Object.keys(owner.weekly).sort((a, b) => a - b);
-  const points = weeks.map(week => Number(owner.weekly[week].toFixed(2)));
-
-  const data = {
-    labels: weeks.map(w => `Week ${w}`),
-    datasets: [
-      {
-        label: "Weekly Points",
-        data: points,
-        borderColor: "#3b82f6",
-        backgroundColor: "#1d4ed8",
-        tension: 0.4,
-      }
-    ]
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false, // ✅ Chart resizes well on mobile
-    plugins: { legend: { display: false } }
-  };
+  
 
   return (
     <div
@@ -59,7 +34,7 @@ export default function OwnerModal({ owner, onClose, allOwners }) {
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
-      <div className="bg-gray-900 p-4 sm:p-6 rounded-lg shadow-lg w-11/12 sm:max-w-xl max-h-[90vh] overflow-auto relative animate-fadeIn">
+      <div className="bg-gray-900 p-4 sm:p-6 rounded-lg shadow-lg w-11/12 sm:max-w-2xl max-h-[90vh] overflow-auto relative">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -68,19 +43,52 @@ export default function OwnerModal({ owner, onClose, allOwners }) {
           ✖
         </button>
 
-        {/* Title */}
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">{owner.ownerName}</h2>
+        {/* Header */}
+        <h2 className="text-xl sm:text-2xl font-bold mb-2 text-center">{owner.ownerName}</h2>
         <p className="text-gray-400 mb-2 text-center text-sm sm:text-base">
-          Current League: <span className="text-indigo-400">{owner.leagueName}</span>
+          League: <span className="text-indigo-400">{owner.leagueName}</span>
         </p>
-        <p className="mb-4 text-center text-sm sm:text-base">
+        <p className="text-center mb-4">
+          Draft Slot: <span className="text-yellow-400 font-bold">#{owner.draftSlot || "-"} </span> - | -
           Total Points: <span className="text-blue-400 font-semibold">{owner.total}</span>
         </p>
 
-        {/* Chart Container - Responsive Height */}
-        <div className="h-48 sm:h-64 mb-4">
-          <Line data={data} options={options} />
-        </div>
+        {/* ✅ Latest Roster Section */}
+        {owner.latestRoster && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2 text-center text-green-400">
+              Latest Roster (Week {owner.latestRoster.week})
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Starters */}
+              <div>
+                <h4 className="font-semibold text-blue-400 mb-1">Starters</h4>
+                <ul className="border border-gray-700 rounded p-2 space-y-1 text-sm">
+                  {owner.latestRoster.starters.map((p, i) => (
+                    <li key={i} className="flex justify-between">
+                      <span>{p.name}</span>
+                      <span className="text-gray-400">{p.points} pts</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Bench */}
+              <div>
+                <h4 className="font-semibold text-gray-300 mb-1">Bench</h4>
+                <ul className="border border-gray-700 rounded p-2 space-y-1 text-sm">
+                  {owner.latestRoster.bench.map((p, i) => (
+                    <li key={i} className="flex justify-between">
+                      <span>{p.name}</span>
+                      <span className="text-gray-400">{p.points} pts</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* Other Leagues */}
         {otherLeagues.length > 0 && (
