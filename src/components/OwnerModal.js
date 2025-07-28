@@ -27,7 +27,7 @@ export default function OwnerModal({ owner, onClose, allOwners, selectedRoster }
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
-      <div className="bg-gray-900 rounded-lg shadow-lg w-[95%] sm:max-w-2xl max-h-[90vh] overflow-y-auto relative p-2 sm:p-6 m-2">
+      <div className="bg-gray-900 rounded-lg shadow-lg w-[95%] sm:max-w-2xl h-[90vh] overflow-y-auto relative p-2 sm:p-6 m-2">
         {/* Close Button */}
         <button
           onClick={onClose}
