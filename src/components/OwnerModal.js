@@ -1,11 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 export default function OwnerModal({ owner, onClose, allOwners, selectedRoster }) {
   const [visible, setVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setVisible(true), []);
-  if (!owner) return null;
+  useEffect(() => {
+    setMounted(true);
+    setVisible(true);
+  }, []);
+
+  if (!owner || !mounted) return null;
 
   const otherLeagues = allOwners
     .filter((o) => o.ownerName === owner.ownerName && o.leagueName !== owner.leagueName)
@@ -13,21 +19,16 @@ export default function OwnerModal({ owner, onClose, allOwners, selectedRoster }
     .sort((a, b) => b.total - a.total);
 
   const roster = selectedRoster || owner.latestRoster;
+  const startersTotal = roster ? roster.starters.reduce((sum, p) => sum + (p.points || 0), 0).toFixed(2) : 0;
+  const benchTotal = roster ? roster.bench.reduce((sum, p) => sum + (p.points || 0), 0).toFixed(2) : 0;
 
-  const startersTotal = roster
-    ? roster.starters.reduce((sum, p) => sum + (p.points || 0), 0).toFixed(2)
-    : 0;
-  const benchTotal = roster
-    ? roster.bench.reduce((sum, p) => sum + (p.points || 0), 0).toFixed(2)
-    : 0;
-
-  return (
+  const modalContent = (
     <div
       className={`fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-70 flex items-center justify-center z-[9999] transition-opacity duration-500 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
-      <div className="bg-gray-900 rounded-lg shadow-lg w-[95%] sm:max-w-2xl h-[90vh] overflow-y-auto relative p-2 sm:p-6 m-2">
+      <div className="bg-gray-900 rounded-lg shadow-lg w-[95%] sm:max-w-2xl max-h-[90vh] overflow-y-auto relative p-2 sm:p-6 m-2">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -37,9 +38,7 @@ export default function OwnerModal({ owner, onClose, allOwners, selectedRoster }
         </button>
 
         {/* Header */}
-        <h2 className="text-base sm:text-2xl font-bold mb-1 sm:mb-2 text-center truncate">
-          {owner.ownerName}
-        </h2>
+        <h2 className="text-base sm:text-2xl font-bold mb-1 sm:mb-2 text-center truncate">{owner.ownerName}</h2>
         <p className="text-gray-400 mb-1 sm:mb-2 text-center text-xs sm:text-base">
           League: <span className="text-indigo-400">{owner.leagueName}</span>
         </p>
@@ -58,7 +57,7 @@ export default function OwnerModal({ owner, onClose, allOwners, selectedRoster }
           )}
         </p>
 
-        {/* ✅ Roster Section */}
+        {/* Roster */}
         {roster && (
           <div className="mb-3 sm:mb-6">
             <h3 className="text-sm sm:text-lg font-semibold mb-1 sm:mb-2 text-center text-green-400">
@@ -121,4 +120,6 @@ export default function OwnerModal({ owner, onClose, allOwners, selectedRoster }
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
