@@ -1,9 +1,8 @@
 import { useRef, useState, useEffect } from "react";
 import OwnerModal from "./OwnerModal";
 
-export default function Leaderboard({ data, year, category }) {
+export default function Leaderboard({ data, year, category, showWeeks, setShowWeeks }) {
   const sortedOwners = [...data.owners].sort((a, b) => b.total - a.total);
-  const [showWeeks, setShowWeeks] = useState(false);
   const [page, setPage] = useState(1);
   const itemsPerPage = 15;
   const totalPages = Math.ceil(sortedOwners.length / itemsPerPage);
@@ -111,25 +110,7 @@ export default function Leaderboard({ data, year, category }) {
   };
 
   return (
-    <div className="overflow-x-auto animate-fadeIn">
-      {/* Toggle Weekly Scores */}
-      <div className="text-center mb-4">
-        <div className="flex items-center justify-center gap-3">
-          <span className="text-lg font-medium">Weekly Scores</span>
-          <button
-            onClick={() => setShowWeeks(!showWeeks)}
-            className={`w-14 h-8 flex items-center rounded-full p-1 transition ${
-              showWeeks ? "bg-blue-600" : "bg-gray-400"
-            }`}
-          >
-            <div
-              className={`bg-white w-6 h-6 rounded-full shadow-md transform transition ${
-                showWeeks ? "translate-x-6" : "translate-x-0"
-              }`}
-            ></div>
-          </button>
-        </div>
-      </div>
+    <div className="overflow-x-auto animate-fadeIn pt-2">
 
       {showWeeks && (
         <div className="flex justify-center items-center gap-3 mb-4">
