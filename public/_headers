@@ -1,0 +1,20 @@
+/*.json
+  Cache-Control: public, max-age=3600, stale-while-revalidate=59
+  Access-Control-Allow-Origin: *
+
+/data/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=59
+  Access-Control-Allow-Origin: *
+
+/*.png
+  Cache-Control: public, max-age=86400, immutable
+/*.jpg
+  Cache-Control: public, max-age=86400, immutable
+/*.jpeg
+  Cache-Control: public, max-age=86400, immutable
+/*.webp
+  Cache-Control: public, max-age=86400, immutable
+/*.svg
+  Cache-Control: public, max-age=86400, immutable
+/*.gif
+  Cache-Control: public, max-age=86400, immutable
