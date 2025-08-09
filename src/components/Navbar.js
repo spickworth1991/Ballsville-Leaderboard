@@ -83,7 +83,16 @@ export default function Navbar({ data, current, setCurrent, showWeeks, setShowWe
     <header className="sticky top-0 z-30 backdrop-blur bg-gray-950/80 border-b border-white/10">
       <div className="px-4 py-3 space-y-2">
   {/* Row 1: Left = logo + titles, Right = years + weekly + modes */}
-  <div className="flex items-center justify-between gap-4">
+    <div
+      className="
+        flex items-center gap-4
+        max-[610px]:flex-wrap
+        md:justify-between
+        max-[610px]:flex-col max-[610px]:items-center max-[610px]:text-center
+      "
+    >
+
+
     {/* Left: Logo + Titles */}
     <div className="flex items-center gap-3 min-w-0">
       <img
@@ -92,19 +101,49 @@ export default function Navbar({ data, current, setCurrent, showWeeks, setShowWe
         className="w-12 h-12 rounded-lg object-cover ring-1 ring-white/10"
       />
       <div className="min-w-0">
-        <div className="text-sm text-white/60 leading-tight">Ballsville Leaderboards</div>
-        <div className="text-base font-semibold text-white leading-tight truncate">
-          {activeBlock?.name || 'Leaderboard'}
-        </div>
+      <div className="text-sm text-white/60 leading-tight">
+        Ballsville
+        <br className="hidden max-[450px]:block" />
+        <span className="max-[450px]:hidden"> </span>
+        Leaderboards
       </div>
+
+      <div
+        className="text-base font-semibold text-white leading-tight 
+                  max-w-[320px] sm:max-w-[420px] md:max-w-[560px]"
+        title={activeBlock?.name}
+      >
+        {activeBlock?.name || 'Leaderboard'}
+      </div>
+    </div>
     </div>
 
     {/* Right: Years + Weekly (top on small) and Modes (under on small) */}
-    <div className="w-full md:w-auto flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+    <div
+      className="
+        w-auto max-[610px]:w-full
+        ml-auto max-[820px]:ml-0
+        max-[820px]:basis-full
+        flex flex-row flex-wrap
+        items-center
+        gap-2 md:gap-3
+        justify-end max-[610px]:justify-center
+      "
+    >
+
+
       {/* Row A: Years + Weekly toggle */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0">
+      <div
+        className="
+          flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0
+          justify-end
+          max-[850px]:basis-full max-[850px]:justify-end
+          max-[610px]:justify-center
+        "
+      >
+
         {/* Years */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end max-[610px]:justify-center">
           {years.map((year) => (
             <Chip
               key={year}
@@ -143,7 +182,15 @@ export default function Navbar({ data, current, setCurrent, showWeeks, setShowWe
       </div>
 
       {/* Row B: Modes */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0 md:ml-1">
+      <div
+        className="
+          flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0 md:ml-1
+          justify-end
+          max-[850px]:basis-full max-[850px]:justify-end
+          max-[610px]:justify-center
+        "
+      >
+
         {availableModes.map((modeKey) => {
           const val = data?.[current.year]?.[modeKey];
           const label = shortModeName(val, modeKey);
