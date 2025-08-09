@@ -1,14 +1,54 @@
-import { useRef, useState, useEffect } from "react";
+// src/components/Leaderboard.jsx
+import { useRef, useState, useEffect, useMemo } from "react";
+import { useLeaderboard } from "../context/LeaderboardContext";
 import OwnerModal from "./OwnerModal";
 
 export default function Leaderboard({ data, year, category, showWeeks, setShowWeeks }) {
-  const sortedOwners = [...data.owners].sort((a, b) => b.total - a.total);
+  const { statsByYear } = useLeaderboard();
+  const { totalTeams = 0, uniqueOwners = 0 } = statsByYear?.[year] || {};
+
+  const sortedOwners = useMemo(
+    () => [...data.owners].sort((a, b) => b.total - a.total),
+    [data.owners]
+  );
+
+  // -------- Owner Search ----------
+  const [query, setQuery] = useState("");
+  const [focusSuggest, setFocusSuggest] = useState(false);
+  const inputRef = useRef(null);
+
+  const norm = (s) => String(s || "").toLowerCase().trim();
+  const q = norm(query);
+
+  const filteredOwners = useMemo(() => {
+    if (!q) return sortedOwners;
+    return sortedOwners.filter((o) => norm(o.ownerName).includes(q));
+  }, [q, sortedOwners]);
+
+  const ownerSuggestions = useMemo(() => {
+    if (!q) return [];
+    const names = Array.from(new Set(sortedOwners.map((o) => o.ownerName)));
+    // Slightly “premium” scoring: startsWith first, then includes
+    const starts = names.filter((n) => norm(n).startsWith(q));
+    const includes = names.filter((n) => !norm(n).startsWith(q) && norm(n).includes(q));
+    return [...starts, ...includes].slice(0, 8);
+  }, [q, sortedOwners]);
+
+  const clearQuery = () => setQuery("");
+
+  // -------- Pagination ----------
   const [page, setPage] = useState(1);
   const itemsPerPage = 15;
-  const totalPages = Math.ceil(sortedOwners.length / itemsPerPage);
-  const startIndex = (page - 1) * itemsPerPage;
-  const currentOwners = sortedOwners.slice(startIndex, startIndex + itemsPerPage);
 
+  useEffect(() => {
+    setPage(1); // reset to page 1 whenever filter changes
+  }, [q, year, category]);
+
+  const totalPages = Math.ceil(filteredOwners.length / itemsPerPage) || 1;
+  const startIndex = (page - 1) * itemsPerPage;
+  const currentOwners = filteredOwners.slice(startIndex, startIndex + itemsPerPage);
+
+  // -------- Weekly data (unchanged) ----------
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [selectedRoster, setSelectedRoster] = useState(null);
   const [weeklyData, setWeeklyData] = useState(null);
@@ -17,41 +57,22 @@ export default function Leaderboard({ data, year, category, showWeeks, setShowWe
   const weeksToShow = 3;
   const maxWeeks = data.weeks.length;
 
-  // ✅ Cache for weekly data
   const weeklyCache = useRef(null);
 
   useEffect(() => {
     const loadWeeklyData = async () => {
       if (weeklyCache.current) {
-        console.log("✅ Using cached weekly data");
         setWeeklyData(weeklyCache.current);
         return;
       }
-
-      console.log("📥 Fetching weekly data...");
       let combinedData = {};
-      let partCount = 0;
-
       for (let i = 1; i <= 20; i++) {
         const partUrl = `/data/weekly_rosters_part${i}.json`;
-        console.log(`Fetching ${partUrl}...`);
-
         try {
           const res = await fetch(partUrl);
-
-          if (res.status === 404) {
-            console.log(`✅ No more files after part ${i - 1}`);
-            break;
-          }
-
-          if (!res.ok) {
-            console.error(`❌ Failed to fetch ${partUrl}: ${res.status}`);
-            break;
-          }
-
+          if (res.status === 404) break;
+          if (!res.ok) break;
           const partData = await res.json();
-          partCount++;
-
           for (const y in partData) {
             if (!combinedData[y]) combinedData[y] = {};
             for (const c in partData[y]) {
@@ -59,42 +80,29 @@ export default function Leaderboard({ data, year, category, showWeeks, setShowWe
               Object.assign(combinedData[y][c], partData[y][c]);
             }
           }
-        } catch (err) {
-          console.error(`❌ Error fetching ${partUrl}:`, err);
+        } catch {
           break;
         }
       }
-
-      console.log(`✅ Loaded ${partCount} parts, years: ${Object.keys(combinedData).join(", ")}`);
-      weeklyCache.current = combinedData; // ✅ Save to cache
+      weeklyCache.current = combinedData;
       setWeeklyData(combinedData);
     };
-
     loadWeeklyData();
-  }, []); // ✅ Only runs once (on mount)
+  }, []);
 
   const handleWeeklyClick = (owner, week) => {
     if (!showWeeks || !weeklyData) return;
-
     const leagueData = weeklyData[year]?.[category]?.[owner.leagueName]?.[week];
-    if (!leagueData) {
-      console.warn(`No data for Year: ${year}, Category: ${category}, League: ${owner.leagueName}, Week: ${week}`);
-      return;
-    }
-
-    const match = leagueData.find(r => r.ownerName === owner.ownerName);
+    if (!leagueData) return;
+    const match = leagueData.find((r) => r.ownerName === owner.ownerName);
     if (match) {
       setSelectedOwner(owner);
-      setSelectedRoster({
-        week,
-        starters: match.starters,
-        bench: match.bench
-      });
+      setSelectedRoster({ week, starters: match.starters, bench: match.bench });
     }
   };
 
   const currentWeeks = showWeeks ? data.weeks.slice(visibleWeeksStart, visibleWeeksStart + weeksToShow) : [];
-  const uniqueLeagues = new Set(sortedOwners.map(o => o.leagueName));
+  const uniqueLeagues = new Set(sortedOwners.map((o) => o.leagueName));
   const showLeagueColumn = uniqueLeagues.size > 1;
 
   const nextWeeks = () => {
@@ -109,9 +117,83 @@ export default function Leaderboard({ data, year, category, showWeeks, setShowWe
     }
   };
 
+  // Simple highlight util for suggestions
+  const highlight = (name) => {
+    const n = String(name);
+    if (!q) return n;
+    const i = n.toLowerCase().indexOf(q);
+    if (i === -1) return n;
+    return (
+      <>
+        {n.slice(0, i)}
+        <span className="bg-yellow-400/30">{n.slice(i, i + q.length)}</span>
+        {n.slice(i + q.length)}
+      </>
+    );
+  };
+
   return (
     <div className="overflow-x-auto animate-fadeIn pt-2">
+      {/* Premium Owner Search */}
+      <div className="max-w-3xl mx-auto w-full mb-4 px-2">
+        <div className="relative">
+          <div className="flex items-center gap-2 bg-gray-900/70 border border-white/10 rounded-xl px-3 py-2">
+            {/* magnifier */}
+            <svg width="18" height="18" viewBox="0 0 24 24" className="opacity-70">
+              <path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.471 6.471 0 0 0 1.57-4.23A6.5 6.5 0 1 0 9.5 16a6.471 6.471 0 0 0 4.23-1.57l.27.28v.79L20 21.5L21.5 20zM4 9.5C4 6.46 6.46 4 9.5 4S15 6.46 15 9.5S12.54 15 9.5 15S4 12.54 4 9.5" />
+            </svg>
 
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setFocusSuggest(true)}
+              onBlur={() => setTimeout(() => setFocusSuggest(false), 120)} // slight delay so clicks register
+              placeholder="Search owners…"
+              className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/40"
+            />
+
+            {query && (
+              <button
+                onClick={clearQuery}
+                className="text-white/70 hover:text-white text-xs px-2 py-1 rounded-md bg-white/10"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Suggestions dropdown */}
+          {focusSuggest && ownerSuggestions.length > 0 && (
+            <div className="absolute left-0 right-0 mt-2 bg-gray-950 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20">
+              <div className="max-h-72 overflow-y-auto divide-y divide-white/10">
+                {ownerSuggestions.map((name) => (
+                  <button
+                    key={name}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/5"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setQuery(name);   // filter directly to this owner
+                      setFocusSuggest(false);
+                    }}
+                  >
+                    {highlight(name)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Stats + result count line */}
+           <div className="mt-1 text-xs text-white/50">
+            Total teams drafted {year}: <span className="text-white">{totalTeams}</span> •
+            {' '}Unique owners in {year}: <span className="text-white">{uniqueOwners}</span>
+          </div> 
+
+        </div>
+      </div>
+
+      {/* Weeks pager (unchanged) */}
       {showWeeks && (
         <div className="flex justify-center items-center gap-3 mb-4">
           <button
